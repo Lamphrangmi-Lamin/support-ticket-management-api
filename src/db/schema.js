@@ -14,7 +14,7 @@ const roleEnum = pgEnum("user_role", ["customer", "agent", "manager"]);
 const usersTable = pgTable("users", {
   id: serial().primaryKey(),
   name: varchar({ length: 255 }).notNull(),
-  email: varchar({ length: 255 }).notNull(),
+  email: varchar({ length: 255 }).notNull().unique(),
   role: roleEnum().default("customer").notNull(),
   created_at: timestamp().defaultNow().notNull(),
 });
