@@ -1,3 +1,4 @@
+const { eq } = require("drizzle-orm");
 const db = require("../db");
 const { usersTable } = require("../db/schema");
 
@@ -43,6 +44,30 @@ exports.getAllUsers = async (req, res) => {
     return res.json(users);
   } catch (error) {
     console.error("Error fetching users: ", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// GET /users/:id
+exports.getUserById = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    if (isNaN(id) || !Number.isInteger(id))
+      return res.status(400).json({ error: "id must be an integer" });
+
+    const [existingUser] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.id, id))
+      .limit(1);
+
+    if (!existingUser)
+      return res.status(404).json({ error: `No user found with ID ${id}` });
+
+    return res.json(existingUser);
+  } catch (error) {
+    console.error("Error while fetching user: ", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 };
