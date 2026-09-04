@@ -1,4 +1,4 @@
-const { eq } = require("drizzle-orm");
+const { eq, and } = require("drizzle-orm");
 const db = require("../db");
 const { usersTable, ticketsTable } = require("../db/schema");
 
@@ -59,5 +59,48 @@ exports.createTicket = async (req, res) => {
   } catch (error) {
     console.error("Error while creating ticket: ", error);
     return res.status(500).json({ error: `Internal server error` });
+  }
+};
+
+// GET /tickets
+// GET /tickets?status=open
+// GET /tickets?priority=urgent
+// GET /tickets?customer_id=1
+// GET /tickets?agent_id=2
+exports.getAllTickets = async (req, res) => {
+  try {
+    // extract all parameter query
+    const { status, priority, customer_id, agent_id } = req.query;
+
+    // Active filters
+    const filters = [];
+
+    if (status) {
+      filters.push(eq(ticketsTable.status, status));
+    }
+
+    if (priority) {
+      filters.push(eq(ticketsTable.priority, priority));
+    }
+
+    if (customer_id) {
+      filters.push(eq(ticketsTable.customer_id, Number(customer_id)));
+    }
+
+    if (agent_id) {
+      filters.push(eq(ticketsTable.assigned_agent_id, Number(agent_id)));
+    }
+
+    // Apply all filters using and() operator
+    const tickets = await db
+      .select()
+      .from(ticketsTable)
+      .where(filters.length > 0 ? and(...filters) : undefined)
+      .limit(50);
+
+    return res.json(tickets);
+  } catch (error) {
+    console.error("Error while fetching: ", error);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
