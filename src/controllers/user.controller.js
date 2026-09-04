@@ -35,3 +35,14 @@ exports.createUser = async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 };
+
+// GET /users
+exports.getAllUsers = async (req, res) => {
+  try {
+    const users = await db.select().from(usersTable).limit(50);
+    return res.json(users);
+  } catch (error) {
+    console.error("Error fetching users: ", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
