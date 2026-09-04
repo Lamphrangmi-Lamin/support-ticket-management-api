@@ -26,7 +26,10 @@ exports.createUser = async (req, res) => {
       .values({ name, email, role })
       .returning();
 
-    return res.status(201).json(newUser);
+    return res.status(201).json({
+      message: "New user created successfully",
+      user: newUser,
+    });
   } catch (error) {
     if ((error.code = "23505")) {
       return res.status(409).json({ error: "Email already exists" });
