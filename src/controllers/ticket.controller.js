@@ -130,3 +130,27 @@ exports.getAllTickets = async (req, res) => {
     return res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+// GET /tickets/:id
+exports.getTicketById = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    if (isNaN(id) || !Number.isInteger(id))
+      return res.status(400).json({ error: "ID must be a valid integer" });
+
+    const [existingTicket] = await db
+      .select()
+      .from(ticketsTable)
+      .where(eq(ticketsTable.id, id))
+      .limit(1);
+
+    if (!existingTicket)
+      return res.status(404).json({ error: `No ticket with ID ${id} exists.` });
+
+    return res.json(existingTicket);
+  } catch (error) {
+    console.error("Error fetching tickets: ", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
