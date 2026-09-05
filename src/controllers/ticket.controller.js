@@ -1,4 +1,4 @@
-const { eq, and } = require("drizzle-orm");
+const { eq, and, sql } = require("drizzle-orm");
 const db = require("../db");
 const { usersTable, ticketsTable } = require("../db/schema");
 
@@ -72,6 +72,11 @@ exports.getAllTickets = async (req, res) => {
     // extract all parameter query
     const { status, priority, customer_id, agent_id } = req.query;
 
+    // Pagination setup with defaults
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
     // Active filters
     const filters = [];
 
@@ -91,16 +96,37 @@ exports.getAllTickets = async (req, res) => {
       filters.push(eq(ticketsTable.assigned_agent_id, Number(agent_id)));
     }
 
+    const whereClause = filters.length > 0 ? and(...filters) : undefined;
+
+    // Get total count for the meta data
+    const [totalCountResult] = await db
+      .select({
+        count: sql`count(*)`.mapWith(Number),
+      })
+      .from(ticketsTable)
+      .where(whereClause);
+
+    const total = totalCountResult.length;
+    const totalPages = Math.ceil(total / limit);
+
     // Apply all filters using and() operator
+    // Get all the paginated data
     const tickets = await db
       .select()
       .from(ticketsTable)
-      .where(filters.length > 0 ? and(...filters) : undefined)
-      .limit(50);
+      .where(whereClause)
+      .limit(limit)
+      .offset(offset);
 
-    return res.json(tickets);
+    return res.status(200).json({
+      data: tickets,
+      page,
+      limit,
+      total,
+      totalPages,
+    });
   } catch (error) {
-    console.error("Error while fetching: ", error);
+    console.error("Error while fetching tickets: ", error);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 };
