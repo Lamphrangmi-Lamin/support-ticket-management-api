@@ -154,3 +154,89 @@ exports.getTicketById = async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 };
+
+// PATCH /tickets/:id
+exports.updateTicketById = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+
+    if (isNaN(id) || !Number.isInteger(id))
+      return res.status(400).json({ error: "Invalid ticket ID format" });
+
+    const updateData = {};
+
+    const { status, priority, assigned_agent_id } = req.body;
+
+    if (status) {
+      const allowedStatus = ["open", "in_progress", "resolved", "closed"];
+
+      if (!allowedStatus.includes(status)) {
+        return res.status(400).json({ error: "Invalid status value" });
+      }
+
+      updateData.status = status;
+    }
+
+    if (priority) {
+      const allowedPriority = ["low", "medium", "high", "urgent"];
+
+      if (!allowedPriority.includes(priority)) {
+        return res.status(400).json({ error: "Invalid priority value" });
+      }
+
+      updateData.priority = priority;
+    }
+
+    if (assigned_agent_id !== undefined) {
+      if (assigned_agent_id === null) {
+        updateData.assigned_agent_id = null;
+      } else {
+        if (isNaN(assigned_agent_id) || !Number.isInteger(assigned_agent_id)) {
+          return res.status(400).json({ error: "Invalid assigned_id format" });
+        }
+
+        const [existingUser] = await db
+          .select({ role: usersTable.role })
+          .from(usersTable)
+          .where(eq(usersTable.id, assigned_agent_id))
+          .limit(1);
+
+        if (!existingUser)
+          return res
+            .status(404)
+            .json({ error: `No agent exist with ID ${assigned_agent_id}` });
+
+        if (existingUser.role === "customer")
+          return res.status(400).json({
+            error: `Tickets can only be assigned to agent or manager`,
+          });
+
+        updateData.assigned_agent_id = assigned_agent_id;
+      }
+    }
+
+    if (Object.keys(updateData).length === 0)
+      return res
+        .status(400)
+        .json({ error: "No valid fields provided for update" });
+
+    updateData.updated_at = new Date();
+
+    // Update operation
+    const [updatedTicket] = await db
+      .update(ticketsTable)
+      .set(updateData)
+      .where(eq(ticketsTable.id, id))
+      .returning();
+
+    if (!updatedTicket)
+      return res.status(404).json({ error: "ticket not found" });
+
+    return res
+      .status(200)
+      .json({ message: `ticket updated successfully`, updatedTicket });
+  } catch (error) {
+    console.error("Error updating tickets: ", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
