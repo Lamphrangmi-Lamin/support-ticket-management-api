@@ -240,3 +240,28 @@ exports.updateTicketById = async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 };
+
+exports.deleteTicketById = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+
+    if (isNaN(id) || !Number.isInteger(id))
+      return res.status(400).json({ error: "Invalid ID format" });
+
+    const [deletedTicket] = await db
+      .delete(ticketsTable)
+      .where(eq(ticketsTable.id, id))
+      .returning();
+
+    if (!deletedTicket)
+      return res.status(404).json({ error: `No ticket with ID ${id} found.` });
+
+    return res
+      .status(200)
+      .json({ message: `Ticket ${id} deleted successfully` });
+    //
+  } catch (error) {
+    console.error("Error deleting ticket: ", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
