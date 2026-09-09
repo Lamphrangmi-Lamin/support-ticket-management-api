@@ -6,6 +6,7 @@ const {
   pgEnum,
   text,
   integer,
+  index,
 } = require("drizzle-orm/pg-core");
 
 // Allowed roles strictly
@@ -34,19 +35,35 @@ const priorityEnum = pgEnum("ticket_priority", [
 ]);
 
 // Tickets
-const ticketsTable = pgTable("tickets", {
-  id: serial().primaryKey(),
-  title: varchar({ length: 255 }).notNull(),
-  description: text().notNull(),
-  status: statusEnum().default("open").notNull(),
-  priority: priorityEnum().notNull(),
-  customer_id: integer()
-    .references(() => usersTable.id)
-    .notNull(),
-  assigned_agent_id: integer().references(() => usersTable.id),
-  created_at: timestamp().defaultNow().notNull(),
-  updated_at: timestamp().defaultNow().notNull(),
-});
+const ticketsTable = pgTable(
+  "tickets",
+  {
+    id: serial().primaryKey(),
+    title: varchar({ length: 255 }).notNull(),
+    description: text().notNull(),
+    status: statusEnum().default("open").notNull(),
+    priority: priorityEnum().notNull(),
+    customer_id: integer()
+      .references(() => usersTable.id)
+      .notNull(),
+    assigned_agent_id: integer().references(() => usersTable.id),
+    created_at: timestamp().defaultNow().notNull(),
+    updated_at: timestamp().defaultNow().notNull(),
+  },
+  (table) => {
+    return {
+      customerIdx: index("customer_idx").on(table.customer_id),
+      agentIdx: index("agent_idx").on(table.assigned_agent_id),
+      statusIdx: index("status_idx").on(table.status),
+      priorityIdx: index("priority_idx").on(table.priority),
+      // composite index
+      statusPriorityIdx: index("status_priority_idx").on(
+        table.status,
+        table.priority,
+      ),
+    };
+  },
+);
 
 const commentsTable = pgTable("comments", {
   id: serial().primaryKey(),
