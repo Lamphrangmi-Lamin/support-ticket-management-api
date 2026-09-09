@@ -5,6 +5,7 @@ const {
   getTicketById,
   updateTicketById,
   deleteTicketById,
+  getTicketStats,
 } = require("../controllers/ticket.controller");
 const {
   createCommentsByTicketId,
@@ -14,6 +15,7 @@ const ticketRouter = express.Router();
 
 ticketRouter.post("/", createTicket);
 ticketRouter.get("/", getAllTickets);
+ticketRouter.get("/stats", getTicketStats);
 ticketRouter.get("/:id", getTicketById);
 ticketRouter.patch("/:id", updateTicketById);
 ticketRouter.delete("/:id", deleteTicketById);

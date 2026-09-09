@@ -134,7 +134,7 @@ exports.getAllTickets = async (req, res) => {
 // GET /tickets/:id
 exports.getTicketById = async (req, res) => {
   try {
-    const id = Number(req.params.id);
+    const id = parseInt(req.params.id);
 
     if (isNaN(id) || !Number.isInteger(id))
       return res.status(400).json({ error: "ID must be a valid integer" });
@@ -262,6 +262,40 @@ exports.deleteTicketById = async (req, res) => {
     //
   } catch (error) {
     console.error("Error deleting ticket: ", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// GET /tickets/stats
+exports.getTicketStats = async (req, res) => {
+  try {
+    const [stats] = await db
+      .select({
+        total: sql`count(*)`.mapWith(Number),
+        open: sql`count(*) filter (where${ticketsTable.status} = 'open')`.mapWith(
+          Number,
+        ),
+        inProgress:
+          sql`count(*) filter (where ${ticketsTable.status} = 'in_progress')`.mapWith(
+            Number,
+          ),
+        resolved:
+          sql`count(*) filter (where ${ticketsTable.status} = 'resolved')`.mapWith(
+            Number,
+          ),
+        closed:
+          sql`count(*) filter (where ${ticketsTable.status} = 'closed')`.mapWith(
+            Number,
+          ),
+      })
+      .from(ticketsTable);
+
+    return res.json({
+      message: "Ticket statistics retrieved successfully",
+      stats,
+    });
+  } catch (error) {
+    console.error("Error fetching ticket stats: ", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 };
