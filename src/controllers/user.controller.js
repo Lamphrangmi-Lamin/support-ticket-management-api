@@ -114,3 +114,41 @@ exports.getTicketsByUserId = async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 };
+
+exports.getTicketsByAgentId = async (req, res) => {
+  try {
+    const agentId = parseInt(req.params.id);
+
+    if (isNaN(agentId) || !Number.isInteger(agentId))
+      return res.status(400).json({ error: "agentId must be an integer" });
+
+    const [existingUser] = await db
+      .select({ id: usersTable.id, role: usersTable.role })
+      .from(usersTable)
+      .where(eq(usersTable.id, agentId))
+      .limit(1);
+
+    if (!existingUser)
+      return res.status(404).json({ error: `No user found with ID ${agentId}` });
+
+    if (existingUser.role !== "agent")
+      return res.status(400).json({ error: "Invalid agent_id" });
+
+    const tickets = await db
+      .select()
+      .from(ticketsTable)
+      .where(eq(ticketsTable.assigned_agent_id, agentId))
+      .limit(50);
+
+    return res.json({
+      message: "Tickets fetched successfully",
+      count: tickets.length,
+      role: existingUser.role,
+      tickets,
+    });
+    //
+  } catch (error) {
+    console.error("Error fetching tickets: ", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
