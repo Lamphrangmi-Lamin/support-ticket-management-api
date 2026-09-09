@@ -1,4 +1,4 @@
-const { eq } = require("drizzle-orm");
+const { eq, asc } = require("drizzle-orm");
 const db = require("../db");
 const { commentsTable, usersTable, ticketsTable } = require("../db/schema");
 const { error } = require("node:console");
@@ -50,6 +50,43 @@ exports.createCommentsByTicketId = async (req, res) => {
     //
   } catch (error) {
     console.error("Error creating comments: ", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+exports.getCommentsByTicketId = async (req, res) => {
+  try {
+    const ticketId = parseInt(req.params.id);
+
+    if (isNaN(ticketId) || !Number.isInteger(ticketId))
+      return res.status(400).json({ error: `Invalid ID format` });
+
+    const [existingTicket] = await db
+      .select({ id: ticketsTable.id })
+      .from(ticketsTable)
+      .where(eq(ticketsTable.id, ticketId))
+      .limit(1);
+
+    if (!existingTicket)
+      return res
+        .status(404)
+        .json({ error: `No ticket with ID ${ticketId} exists` });
+
+    const comments = await db
+      .select()
+      .from(commentsTable)
+      .where(eq(commentsTable.ticket_id, ticketId))
+      .orderBy(asc(commentsTable.created_at))
+      .limit(50);
+
+    return res.status(200).json({
+      message: "Comments fetched successfully",
+      count: comments.length,
+      comments,
+    });
+    //
+  } catch (error) {
+    console.error("Error fetching comments: ", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 };

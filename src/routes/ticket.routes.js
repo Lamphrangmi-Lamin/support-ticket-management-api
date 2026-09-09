@@ -8,6 +8,7 @@ const {
 } = require("../controllers/ticket.controller");
 const {
   createCommentsByTicketId,
+  getCommentsByTicketId,
 } = require("../controllers/comment.controller");
 const ticketRouter = express.Router();
 
@@ -16,6 +17,7 @@ ticketRouter.get("/", getAllTickets);
 ticketRouter.get("/:id", getTicketById);
 ticketRouter.patch("/:id", updateTicketById);
 ticketRouter.delete("/:id", deleteTicketById);
+ticketRouter.get("/:id/comments", getCommentsByTicketId);
 
 // Comments routes
 ticketRouter.post("/:id/comments", createCommentsByTicketId);
