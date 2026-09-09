@@ -3,6 +3,7 @@ const {
   createUser,
   getAllUsers,
   getUserById,
+  getTicketsByUserId,
 } = require("../controllers/user.controller");
 
 const userRouter = express.Router();
@@ -13,5 +14,7 @@ userRouter.post("/", createUser);
 userRouter.get("/", getAllUsers);
 // GET /user/:id
 userRouter.get("/:id", getUserById);
+// GET /users/:id/tickets
+userRouter.get("/:id/tickets", getTicketsByUserId);
 
 module.exports = userRouter;
